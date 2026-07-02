@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX Studio — Admin Dashboard</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --black:#0a0a0a; --panel:#121212; --panel-2:#161412;
+  --orange:#ff6a1a; --orange-2:#ff9248; --cream:#f5f1ea; --mute:#8f8a82;
+  --line:rgba(255,255,255,0.09); --glass:rgba(255,255,255,0.035);
+  --good:#39d17a; --bad:#ff4d4d;
+  --display:'Unbounded',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ background:var(--black); color:var(--cream); font-family:var(--body); min-height:100vh; }
+button{ font-family:inherit; cursor:pointer; }
+input,textarea,select{ font-family:inherit; }
+::-webkit-scrollbar{ width:8px; height:8px; } ::-webkit-scrollbar-thumb{ background:var(--orange); border-radius:8px; }
+
+/* ---------- LOGIN ---------- */
+#loginScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.login-box{ width:100%; max-width:380px; background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:40px 34px; }
+.login-logo{ font-family:var(--display); font-size:22px; font-weight:800; margin-bottom:6px; }
+.login-logo span{ color:var(--orange); }
+.login-sub{ font-family:var(--mono); font-size:12px; color:var(--mute); margin-bottom:30px; }
+.field{ margin-bottom:16px; }
+.field label{ font-family:var(--mono); font-size:11px; color:var(--mute); text-transform:uppercase; letter-spacing:0.06em; }
+.field input, .field select, .field textarea{
+  width:100%; margin-top:8px; background:var(--black); border:1px solid var(--line); border-radius:10px;
+  padding:12px 14px; color:var(--cream); font-size:14px;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--orange); }
+.btn{ font-family:var(--mono); font-size:13px; padding:13px 22px; border-radius:10px; border:1px solid var(--line); color:var(--cream); transition:all .2s; display:inline-flex; align-items:center; gap:8px; justify-content:center;}
+.btn:hover{ border-color:var(--orange); color:var(--orange); }
+.btn-solid{ background:var(--orange); color:var(--black); border-color:var(--orange); }
+.btn-solid:hover{ opacity:0.88; color:var(--black); }
+.btn-danger{ border-color:rgba(255,77,77,0.4); color:var(--bad); }
+.btn-danger:hover{ background:var(--bad); color:var(--black); border-color:var(--bad); }
+.btn-block{ width:100%; }
+.login-msg{ font-family:var(--mono); font-size:12px; margin-top:14px; min-height:16px; }
+.login-msg.err{ color:var(--bad); }
+.login-msg.ok{ color:var(--good); }
+
+/* ---------- SHELL ---------- */
+#appShell{ display:none; min-height:100vh; grid-template-columns:230px 1fr; }
+#appShell.active{ display:grid; }
+aside{ background:var(--panel); border-right:1px solid var(--line); padding:26px 18px; display:flex; flex-direction:column; }
+.side-logo{ font-family:var(--display); font-weight:800; font-size:18px; padding:0 10px 26px; }
+.side-logo span{ color:var(--orange); }
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; font-size:14px; color:var(--mute);
+  margin-bottom:4px; transition:all .2s;
+}
+.nav-item:hover{ background:var(--glass); color:var(--cream); }
+.nav-item.active{ background:rgba(255,106,26,0.12); color:var(--orange); }
+.side-bottom{ margin-top:auto; padding-top:20px; border-top:1px solid var(--line); }
+main{ padding:36px 40px; overflow-y:auto; max-height:100vh; }
+.page{ display:none; }
+.page.active{ display:block; animation:fadein .3s ease; }
+@keyframes fadein{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+.page-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:14px;}
+.page-title{ font-family:var(--display); font-size:26px; font-weight:700; }
+.page-sub{ color:var(--mute); font-size:13px; margin-top:6px; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:26px; margin-bottom:20px; }
+.card h3{ font-family:var(--display); font-size:16px; margin-bottom:16px; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+@media(max-width:900px){ .grid2,.grid3{ grid-template-columns:1fr; } #appShell{ grid-template-columns:1fr; } aside{ position:sticky; top:0; z-index:50; flex-direction:row; align-items:center; overflow-x:auto; padding:14px; } .side-logo{padding:0 14px 0 0;} .side-bottom{margin:0; border:0; padding:0;} .nav-item{white-space:nowrap;} main{padding:22px;} }
+
+/* ---------- DROPZONE ---------- */
+.dropzone{
+  border:1.5px dashed var(--line); border-radius:14px; padding:28px; text-align:center; cursor:pointer;
+  transition:all .2s; position:relative;
+}
+.dropzone:hover, .dropzone.drag{ border-color:var(--orange); background:rgba(255,106,26,0.04); }
+.dropzone p{ font-size:13px; color:var(--mute); margin-top:6px; }
+.dropzone .dz-icon{ font-family:var(--mono); font-size:22px; color:var(--orange); }
+.dropzone input[type=file]{ display:none; }
+.preview-box{ margin-top:14px; border-radius:12px; overflow:hidden; border:1px solid var(--line); max-height:180px; display:flex; align-items:center; justify-content:center; background:var(--black); }
+.preview-box img, .preview-box video{ width:100%; max-height:180px; object-fit:contain; }
+.upload-status{ font-family:var(--mono); font-size:11px; margin-top:10px; color:var(--mute); }
+.upload-status.ok{ color:var(--good); }
+.progress-bar{ height:4px; background:var(--line); border-radius:4px; overflow:hidden; margin-top:8px; display:none; }
+.progress-bar.show{ display:block; }
+.progress-fill{ height:100%; width:30%; background:var(--orange); animation:load 1s infinite ease-in-out; }
+@keyframes load{ 0%{margin-left:0%;} 50%{margin-left:70%;} 100%{margin-left:0%;} }
+
+/* ---------- PORTFOLIO GRID ---------- */
+.pf-admin-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; margin-top:20px; }
+.pf-admin-item{ border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--black); }
+.pf-admin-item .thumb{ aspect-ratio:4/5; background:var(--panel-2); position:relative; overflow:hidden; }
+.pf-admin-item .thumb img{ width:100%; height:100%; object-fit:cover; }
+.pf-admin-item .thumb .badge{ position:absolute; top:8px; left:8px; font-family:var(--mono); font-size:9px; background:rgba(0,0,0,0.7); padding:4px 8px; border-radius:6px; text-transform:uppercase; }
+.pf-admin-item .info{ padding:12px; }
+.pf-admin-item .info .t{ font-size:13px; font-weight:600; }
+.pf-admin-item .info .c{ font-family:var(--mono); font-size:10px; color:var(--mute); text-transform:uppercase; margin-top:4px; }
+.pf-admin-item .info .del{ margin-top:10px; width:100%; padding:8px; font-size:11px; }
+
+/* ---------- TABLE-ISH LISTS ---------- */
+.list-row{ display:flex; gap:12px; align-items:flex-start; padding:16px 0; border-bottom:1px solid var(--line); }
+.list-row:last-child{ border-bottom:none; }
+.list-row .row-fields{ flex:1; display:grid; grid-template-columns:1fr 2fr auto; gap:12px; }
+@media(max-width:700px){ .list-row .row-fields{ grid-template-columns:1fr; } }
+.stars-badge{ color:var(--orange); font-size:13px; }
+.pill{ font-family:var(--mono); font-size:10px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); display:inline-block; }
+.pill.pending{ color:var(--orange-2); border-color:var(--orange-2); }
+.pill.approved{ color:var(--good); border-color:var(--good); }
+.toast{
+  position:fixed; bottom:26px; right:26px; background:var(--panel); border:1px solid var(--orange);
+  padding:14px 20px; border-radius:12px; font-size:13px; z-index:999; transform:translateY(120%); transition:transform .35s;
+}
+.toast.show{ transform:translateY(0); }
+.small-mute{ font-family:var(--mono); font-size:11px; color:var(--mute); }
+.feature-list textarea{ min-height:110px; }
+.checkbox-row{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+.checkbox-row input{ width:auto; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">FX <span>STUDIO</span></div>
+    <div class="login-sub">ADMIN DASHBOARD · AUTHORIZED ACCESS ONLY</div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+    <button class="btn btn-solid btn-block" id="loginBtn">Sign In</button>
+    <div class="login-msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell">
+  <aside>
+    <div class="side-logo">FX <span>STUDIO</span></div>
+    <div class="nav-item active" data-page="branding">🖼 Branding</div>
+    <div class="nav-item" data-page="portfolio">🗂 Portfolio</div>
+    <div class="nav-item" data-page="pricing">💳 Pricing</div>
+    <div class="nav-item" data-page="services">🧩 Services</div>
+    <div class="nav-item" data-page="reviews">⭐ Reviews</div>
+    <div class="nav-item" data-page="contact">📇 Contact</div>
+    <div class="side-bottom">
+      <button class="btn btn-danger btn-block" id="logoutBtn">Log Out</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- BRANDING PAGE -->
+    <section class="page active" id="page-branding">
+      <div class="page-head"><div><div class="page-title">Branding</div><div class="page-sub">Logo, hero image, about photo & showreel — drag &amp; drop to replace.</div></div></div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Logo</h3>
+          <div class="dropzone" data-target="logo" data-accept="image">
+            <div class="dz-icon">↑</div><p>Drop image or click to upload</p>
+            <input type="file" accept="image/*">
+          </div>
+          <div class="preview-box" id="preview-logo"></div>
+          <div class="progress-bar" id="progress-logo"><div class="progress-fill"></div></div>
+          <div class="upload-status" id="status-logo"></div>
+        </div>
+        <div class="card">
+          <h3>Hero Image</h3>
+          <div class="dropzone" data-target="hero" data-accept="image">
+            <div class="dz-icon">↑</div><p>Drop image or click to upload</p>
+            <input type="file" accept="image/*">
+          </div>
+          <div class="preview-box" id="preview-hero"></div>
+          <div class="progress-bar" id="progress-hero"><div class="progress-fill"></div></div>
+          <div class="upload-status" id="status-hero"></div>
+        </div>
+        <div class="card">
+          <h3>About Photo</h3>
+          <div class="dropzone" data-target="about" data-accept="image">
+            <div class="dz-icon">↑</div><p>Drop image or click to upload</p>
+            <input type="file" accept="image/*">
+          </div>
+          <div class="preview-box" id="preview-about"></div>
+          <div class="progress-bar" id="progress-about"><div class="progress-fill"></div></div>
+          <div class="upload-status" id="status-about"></div>
+        </div>
+        <div class="card">
+          <h3>Showreel Video</h3>
+          <div class="dropzone" data-target="showreel" data-accept="video">
+            <div class="dz-icon">↑</div><p>Drop MP4 or click to upload</p>
+            <input type="file" accept="video/mp4">
+          </div>
+          <div class="preview-box" id="preview-showreel"></div>
+          <div class="progress-bar" id="progress-showreel"><div class="progress-fill"></div></div>
+          <div class="upload-status" id="status-showreel"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PORTFOLIO PAGE -->
+    <section class="page" id="page-portfolio">
+      <div class="page-head"><div><div class="page-title">Portfolio</div><div class="page-sub">Upload images or MP4 videos. Video thumbnails are generated automatically.</div></div></div>
+      <div class="card">
+        <h3>Upload New Item(s)</h3>
+        <div class="grid3" style="margin-bottom:16px;">
+          <div class="field" style="margin:0;"><label>Title</label><input type="text" id="pfTitle" placeholder="e.g. Sizzle Bites — Reel Ad"></div>
+          <div class="field" style="margin:0;"><label>Category</label>
+            <select id="pfCategory">
+              <option value="ads">Ads</option><option value="branding">Branding</option>
+              <option value="websites">Websites</option><option value="logos">Logos</option>
+              <option value="banners">Banners</option><option value="posters">Posters</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;"><label>&nbsp;</label><div class="small-mute" style="margin-top:12px;">Set title/category before dropping files</div></div>
+        </div>
+        <div class="dropzone" id="pfDropzone" data-target="portfolio" data-accept="both">
+          <div class="dz-icon">↑</div><p>Drop images / MP4 videos here, or click to upload (multiple allowed)</p>
+          <input type="file" accept="image/*,video/mp4" multiple>
+        </div>
+        <div class="progress-bar" id="progress-portfolio"><div class="progress-fill"></div></div>
+        <div class="upload-status" id="status-portfolio"></div>
+      </div>
+      <div class="pf-admin-grid" id="pfAdminGrid"></div>
+    </section>
+
+    <!-- PRICING PAGE -->
+    <section class="page" id="page-pricing">
+      <div class="page-head"><div><div class="page-title">Pricing</div><div class="page-sub">Edit the 3 pricing cards shown on the live site.</div></div></div>
+      <div class="grid3" id="pricingGrid"></div>
+    </section>
+
+    <!-- SERVICES PAGE -->
+    <section class="page" id="page-services">
+      <div class="page-head">
+        <div><div class="page-title">Services</div><div class="page-sub">The service cards shown in the Services section.</div></div>
+        <button class="btn btn-solid" id="addServiceBtn">+ Add Service</button>
+      </div>
+      <div class="card" id="servicesList"></div>
+    </section>
+
+    <!-- REVIEWS PAGE -->
+    <section class="page" id="page-reviews">
+      <div class="page-head"><div><div class="page-title">Reviews</div><div class="page-sub">Approve client reviews before they go live, or add one manually.</div></div></div>
+      <div class="card">
+        <h3>Add Review Manually</h3>
+        <div class="grid3">
+          <div class="field" style="margin:0;"><label>Name</label><input type="text" id="revName"></div>
+          <div class="field" style="margin:0;"><label>Company</label><input type="text" id="revCo"></div>
+          <div class="field" style="margin:0;"><label>Stars (1-5)</label><input type="number" id="revStars" min="1" max="5" value="5"></div>
+        </div>
+        <div class="field"><label>Message</label><textarea id="revMsg" rows="3"></textarea></div>
+        <button class="btn btn-solid" id="addReviewBtn">Add &amp; Approve</button>
+      </div>
+      <div class="card">
+        <h3>Pending Approval</h3>
+        <div id="pendingReviews"></div>
+      </div>
+      <div class="card">
+        <h3>Approved &amp; Live</h3>
+        <div id="approvedReviews"></div>
+      </div>
+    </section>
+
+    <!-- CONTACT PAGE -->
+    <section class="page" id="page-contact">
+      <div class="page-head"><div><div class="page-title">Contact &amp; Site Text</div><div class="page-sub">Updates the hero headline and contact details across the site.</div></div></div>
+      <div class="card">
+        <div class="grid2">
+          <div class="field"><label>WhatsApp Number</label><input type="text" id="cWhatsapp"></div>
+          <div class="field"><label>Email</label><input type="text" id="cEmail"></div>
+          <div class="field"><label>Instagram URL</label><input type="text" id="cInstaUrl"></div>
+          <div class="field"><label>Instagram Handle</label><input type="text" id="cInstaHandle"></div>
+        </div>
+        <div class="field"><label>Tagline</label><input type="text" id="cTagline"></div>
+        <div class="field"><label>Hero Headline</label><input type="text" id="cHeadline"></div>
+        <div class="field"><label>Hero Subheadline</label><textarea id="cSubheadline" rows="3"></textarea></div>
+        <button class="btn btn-solid" id="saveContactBtn">Save Changes</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG — paste your Supabase project values here
+   ============================================================ */
+const SUPABASE_URL = "https://cnhkyhrrdjgumkrthtln.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_TQ7U1Ur6u8lTvc8Kk1B-vQ_B2GU4ftH";
+const BUCKET = "fx-media";
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============================================================
+   CONFIG VALIDATION + CONNECTION DIAGNOSTICS
+   ============================================================ */
+function validateConfig(){
+  const problems = [];
+  if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_SUPABASE')) problems.push('SUPABASE_URL is still a placeholder.');
+  if (!/^https:\/\/[a-z0-9]+\.supabase\.co\/?$/i.test(SUPABASE_URL.replace(/\/$/, ''))) problems.push(`SUPABASE_URL "${SUPABASE_URL}" does not look like a bare project URL (expected format: https://<ref>.supabase.co — no /rest/v1/ or trailing path).`);
+  if (SUPABASE_URL.includes('/rest/v1') || SUPABASE_URL.includes('/auth/v1')) problems.push('SUPABASE_URL contains an API path segment (/rest/v1 or /auth/v1) — remove it, createClient() appends this automatically.');
+  if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')) problems.push('SUPABASE_ANON_KEY is still a placeholder.');
+  if (!/^sb_publishable_/.test(SUPABASE_ANON_KEY) && !/^eyJ/.test(SUPABASE_ANON_KEY)) problems.push('SUPABASE_ANON_KEY does not match either known key format (new "sb_publishable_..." keys or legacy JWT "eyJ..." anon keys). Double-check you copied the Publishable key, not the Secret key.');
+  if (problems.length){
+    console.error('[FX Studio Admin] Supabase config problems found:\n' + problems.map(p => ' - ' + p).join('\n'));
+  } else {
+    console.log('[FX Studio Admin] Supabase config looks structurally valid:', { SUPABASE_URL, key_prefix: SUPABASE_ANON_KEY.slice(0, 14) + '…' });
+  }
+  return problems;
+}
+
+/** Turns a thrown error (network-level) or a Supabase {error} object into a readable, specific message. */
+function describeSupabaseError(err){
+  // Supabase JS v2 auth/postgrest errors: { message, status, code, name }
+  if (err && (err.status || err.code) && err.message){
+    return `HTTP ${err.status ?? '—'}${err.code ? ' [' + err.code + ']' : ''}: ${err.message}`;
+  }
+  // Raw browser fetch failure — no response was ever received
+  if (err instanceof TypeError && /fetch/i.test(err.message)){
+    return `Network request never reached Supabase ("${err.message}"). Most likely causes: `
+      + `(1) SUPABASE_URL is wrong or the project is paused (free-tier projects auto-pause after inactivity — check the Supabase dashboard), `
+      + `(2) you're opening this file directly as file:// and something (browser, extension, or firewall) is blocking the cross-origin request, `
+      + `(3) no internet connection right now, `
+      + `(4) an ad-blocker/privacy extension is blocking requests to *.supabase.co. `
+      + `Open DevTools → Network tab, retry, and check the failed request's status.`;
+  }
+  return (err && err.message) ? err.message : String(err);
+}
+
+/** Pings the Auth API's public settings endpoint (no login required) to confirm the URL/key actually reach Supabase. */
+async function testSupabaseConnection(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } });
+    const bodyText = await res.text();
+    if (!res.ok){
+      console.error(`[FX Studio Admin] Connection check failed — HTTP ${res.status} ${res.statusText}\nResponse body: ${bodyText}`);
+      const msg = document.getElementById('loginMsg');
+      msg.textContent = `Cannot reach Supabase (HTTP ${res.status}): ${bodyText.slice(0, 180)}`;
+      msg.className = 'login-msg err';
+      return false;
+    }
+    console.log('[FX Studio Admin] Supabase connection OK ✓', JSON.parse(bodyText));
+    return true;
+  } catch(err){
+    console.error('[FX Studio Admin] Connection check threw before any response was received:', err);
+    const msg = document.getElementById('loginMsg');
+    msg.textContent = describeSupabaseError(err);
+    msg.className = 'login-msg err';
+    return false;
+  }
+}
+
+validateConfig();
+document.addEventListener('DOMContentLoaded', testSupabaseConnection);
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function toast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isErr ? 'var(--bad)' : 'var(--orange)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+function compressImage(file, maxWidth = 1600, quality = 0.82){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxWidth){ h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function generateVideoThumbnail(file){
+  return new Promise((resolve, reject)=>{
+    const video = document.createElement('video');
+    video.preload = 'metadata'; video.muted = true; video.playsInline = true;
+    video.src = URL.createObjectURL(file);
+    video.onloadeddata = () => { video.currentTime = Math.min(1, (video.duration || 2) / 2); };
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      canvas.toBlob(blob => { URL.revokeObjectURL(video.src); resolve(blob); }, 'image/jpeg', 0.8);
+    };
+    video.onerror = reject;
+  });
+}
+
+async function uploadToStorage(blob, path, contentType){
+  const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType, upsert: true });
+  if (error) throw error;
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function deleteFromStorage(path){
+  if (!path) return;
+  await sb.storage.from(BUCKET).remove([path]);
+}
+
+function pathFromUrl(url){
+  if (!url) return null;
+  const marker = `/object/public/${BUCKET}/`;
+  const idx = url.indexOf(marker);
+  return idx === -1 ? null : url.slice(idx + marker.length);
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const msg = document.getElementById('loginMsg');
+  msg.textContent = 'Signing in…'; msg.className = 'login-msg';
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error){
+      // Request reached Supabase and got a real response — e.g. wrong password,
+      // "Email logins are disabled", unconfirmed user, etc.
+      console.error('[FX Studio Admin] Supabase returned an auth error:', error);
+      msg.textContent = describeSupabaseError(error);
+      msg.className = 'login-msg err';
+      return;
+    }
+    console.log('[FX Studio Admin] Signed in ✓', data.user?.email);
+    msg.textContent = 'Success'; msg.className = 'login-msg ok';
+  } catch(err){
+    // Request never got a response at all — this is the "Failed to fetch" case.
+    console.error('[FX Studio Admin] Login request failed before reaching Supabase:', err);
+    msg.textContent = describeSupabaseError(err);
+    msg.className = 'login-msg err';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+});
+
+sb.auth.onAuthStateChange((event, session)=>{
+  if (session){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').classList.add('active');
+    initDashboard();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('appShell').classList.remove('active');
+  }
+});
+
+/* ============================================================
+   NAV
+   ============================================================ */
+document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item[data-page]').forEach(i=>i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+  });
+});
+
+/* ============================================================
+   DROPZONE WIRING (generic)
+   ============================================================ */
+function wireDropzone(zone, onFiles){
+  const input = zone.querySelector('input[type=file]');
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { onFiles([...input.files]); input.value = ''; });
+  ['dragover','dragenter'].forEach(evt => zone.addEventListener(evt, e=>{ e.preventDefault(); zone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(evt => zone.addEventListener(evt, e=>{ e.preventDefault(); zone.classList.remove('drag'); }));
+  zone.addEventListener('drop', e => { onFiles([...e.dataTransfer.files]); });
+}
+
+/* ============================================================
+   BRANDING UPLOADS
+   ============================================================ */
+const brandingFields = { logo: 'logo_url', hero: 'hero_image_url', about: 'about_photo_url', showreel: 'showreel_url' };
+
+async function handleBrandingUpload(target, files){
+  const file = files[0];
+  if (!file) return;
+  const progress = document.getElementById('progress-' + target);
+  const status = document.getElementById('status-' + target);
+  progress.classList.add('show');
+  status.textContent = 'Processing…'; status.className = 'upload-status';
+  try{
+    let blob = file, contentType = file.type, ext = target === 'showreel' ? 'mp4' : 'jpg';
+    if (target !== 'showreel'){ blob = await compressImage(file); contentType = 'image/jpeg'; }
+    const path = `${target}/${target}-${Date.now()}.${ext}`;
+    const url = await uploadToStorage(blob, path, contentType);
+    const field = brandingFields[target];
+    const { error } = await sb.from('site_settings').update({ [field]: url, updated_at: new Date().toISOString() }).eq('id', 1);
+    if (error) throw error;
+    renderBrandingPreview(target, url);
+    status.textContent = 'Uploaded ✓'; status.className = 'upload-status ok';
+    toast(target[0].toUpperCase()+target.slice(1) + ' updated');
+  } catch(err){
+    status.textContent = 'Failed: ' + err.message; status.className = 'upload-status';
+    toast('Upload failed: ' + err.message, true);
+  } finally {
+    progress.classList.remove('show');
+  }
+}
+
+function renderBrandingPreview(target, url){
+  const box = document.getElementById('preview-' + target);
+  if (!url){ box.innerHTML = ''; return; }
+  box.innerHTML = target === 'showreel'
+    ? `<video src="${url}" controls></video>`
+    : `<img src="${url}" alt="${target}">`;
+}
+
+document.querySelectorAll('.dropzone[data-target]').forEach(zone=>{
+  const target = zone.dataset.target;
+  if (target === 'portfolio') return; // wired separately below
+  wireDropzone(zone, files => handleBrandingUpload(target, files));
+});
+
+async function loadBranding(){
+  const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
+  if (error || !data) return;
+  renderBrandingPreview('logo', data.logo_url);
+  renderBrandingPreview('hero', data.hero_image_url);
+  renderBrandingPreview('about', data.about_photo_url);
+  renderBrandingPreview('showreel', data.showreel_url);
+  document.getElementById('cWhatsapp').value = data.whatsapp || '';
+  document.getElementById('cEmail').value = data.email || '';
+  document.getElementById('cInstaUrl').value = data.instagram_url || '';
+  document.getElementById('cInstaHandle').value = data.instagram_handle || '';
+  document.getElementById('cTagline').value = data.tagline || '';
+  document.getElementById('cHeadline').value = data.headline || '';
+  document.getElementById('cSubheadline').value = data.subheadline || '';
+}
+
+/* ============================================================
+   PORTFOLIO
+   ============================================================ */
+const pfZone = document.getElementById('pfDropzone');
+wireDropzone(pfZone, files => handlePortfolioUpload(files));
+
+async function handlePortfolioUpload(files){
+  const title = document.getElementById('pfTitle').value.trim() || 'Untitled';
+  const category = document.getElementById('pfCategory').value;
+  const progress = document.getElementById('progress-portfolio');
+  const status = document.getElementById('status-portfolio');
+  progress.classList.add('show');
+  let done = 0;
+  for (const file of files){
+    status.textContent = `Uploading ${done+1}/${files.length}…`;
+    try{
+      const isVideo = file.type.startsWith('video');
+      const stamp = Date.now() + '-' + Math.random().toString(36).slice(2,7);
+      let mediaUrl, thumbUrl = null;
+      if (isVideo){
+        mediaUrl = await uploadToStorage(file, `portfolio/${stamp}.mp4`, 'video/mp4');
+        const thumbBlob = await generateVideoThumbnail(file);
+        thumbUrl = await uploadToStorage(thumbBlob, `thumbnails/${stamp}.jpg`, 'image/jpeg');
+      } else {
+        const compressed = await compressImage(file);
+        mediaUrl = await uploadToStorage(compressed, `portfolio/${stamp}.jpg`, 'image/jpeg');
+      }
+      const { error } = await sb.from('portfolio_items').insert({
+        title, category, media_type: isVideo ? 'video' : 'image', media_url: mediaUrl, thumbnail_url: thumbUrl
+      });
+      if (error) throw error;
+      done++;
+    } catch(err){
+      toast('Failed on "' + file.name + '": ' + err.message, true);
+    }
+  }
+  status.textContent = `${done}/${files.length} uploaded ✓`;
+  progress.classList.remove('show');
+  toast(`${done} portfolio item(s) added`);
+  loadPortfolio();
+}
+
+async function loadPortfolio(){
+  const { data, error } = await sb.from('portfolio_items').select('*').order('created_at', { ascending: false });
+  const grid = document.getElementById('pfAdminGrid');
+  grid.innerHTML = '';
+  if (error || !data) return;
+  data.forEach(item=>{
+    const thumb = item.media_type === 'video' ? (item.thumbnail_url || '') : item.media_url;
+    const el = document.createElement('div');
+    el.className = 'pf-admin-item';
+    el.innerHTML = `
+      <div class="thumb"><span class="badge">${item.media_type}</span>${thumb ? `<img src="${thumb}" alt="${item.title}">` : ''}</div>
+      <div class="info">
+        <div class="t">${item.title}</div>
+        <div class="c">${item.category}</div>
+        <button class="btn btn-danger del" data-id="${item.id}" data-media="${item.media_url}" data-thumb="${item.thumbnail_url || ''}">Delete</button>
+      </div>`;
+    grid.appendChild(el);
+  });
+  grid.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if (!confirm('Delete this portfolio item permanently?')) return;
+      const { id } = btn.dataset;
+      await deleteFromStorage(pathFromUrl(btn.dataset.media));
+      if (btn.dataset.thumb) await deleteFromStorage(pathFromUrl(btn.dataset.thumb));
+      const { error } = await sb.from('portfolio_items').delete().eq('id', id);
+      if (error){ toast('Delete failed: ' + error.message, true); return; }
+      toast('Portfolio item deleted');
+      loadPortfolio();
+    });
+  });
+}
+
+/* ============================================================
+   PRICING
+   ============================================================ */
+async function loadPricing(){
+  const { data, error } = await sb.from('pricing_plans').select('*').order('order_index');
+  const wrap = document.getElementById('pricingGrid');
+  wrap.innerHTML = '';
+  if (error || !data) return;
+  data.forEach(plan=>{
+    const features = (plan.features || []).join('\n');
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = `
+      <h3>${plan.tier}</h3>
+      <div class="field"><label>Old Price</label><input type="text" class="p-old" value="${plan.price_old || ''}"></div>
+      <div class="field"><label>New Price</label><input type="text" class="p-new" value="${plan.price_new || ''}"></div>
+      <div class="field"><label>Delivery</label><input type="text" class="p-delivery" value="${plan.delivery || ''}"></div>
+      <div class="field"><label>Badge (optional)</label><input type="text" class="p-badge" value="${plan.badge || ''}"></div>
+      <div class="field feature-list"><label>Features (one per line)</label><textarea class="p-features">${features}</textarea></div>
+      <div class="checkbox-row"><input type="checkbox" class="p-popular" ${plan.is_popular ? 'checked' : ''}><label>Mark as "Most Popular"</label></div>
+      <button class="btn btn-solid btn-block" style="margin-top:16px;" data-id="${plan.id}">Save ${plan.tier}</button>
+    `;
+    wrap.appendChild(el);
+    el.querySelector('button').addEventListener('click', async (e)=>{
+      const id = e.target.dataset.id;
+      const payload = {
+        price_old: el.querySelector('.p-old').value,
+        price_new: el.querySelector('.p-new').value,
+        delivery: el.querySelector('.p-delivery').value,
+        badge: el.querySelector('.p-badge').value || null,
+        is_popular: el.querySelector('.p-popular').checked,
+        features: el.querySelector('.p-features').value.split('\n').map(s=>s.trim()).filter(Boolean)
+      };
+      const { error } = await sb.from('pricing_plans').update(payload).eq('id', id);
+      toast(error ? 'Save failed: ' + error.message : plan.tier + ' saved', !!error);
+    });
+  });
+}
+
+/* ============================================================
+   SERVICES
+   ============================================================ */
+async function loadServices(){
+  const { data, error } = await sb.from('services').select('*').order('order_index');
+  const wrap = document.getElementById('servicesList');
+  wrap.innerHTML = '';
+  if (error || !data) return;
+  data.forEach(svc => wrap.appendChild(serviceRow(svc)));
+}
+
+function serviceRow(svc){
+  const row = document.createElement('div');
+  row.className = 'list-row';
+  row.innerHTML = `
+    <div class="row-fields">
+      <input type="text" class="s-title" value="${svc.title || ''}" placeholder="Title">
+      <input type="text" class="s-desc" value="${svc.description || ''}" placeholder="Description">
+      <div style="display:flex; gap:8px;">
+        <button class="btn s-save">Save</button>
+        <button class="btn btn-danger s-del">Delete</button>
+      </div>
+    </div>`;
+  row.querySelector('.s-save').addEventListener('click', async ()=>{
+    const payload = { title: row.querySelector('.s-title').value, description: row.querySelector('.s-desc').value };
+    const { error } = await sb.from('services').update(payload).eq('id', svc.id);
+    toast(error ? 'Save failed' : 'Service saved', !!error);
+  });
+  row.querySelector('.s-del').addEventListener('click', async ()=>{
+    if (!confirm('Delete this service?')) return;
+    await sb.from('services').delete().eq('id', svc.id);
+    row.remove();
+    toast('Service deleted');
+  });
+  return row;
+}
+
+document.getElementById('addServiceBtn').addEventListener('click', async ()=>{
+  const { data, error } = await sb.from('services').insert({ title: 'New Service', description: '', order_index: 99 }).select().single();
+  if (error){ toast('Failed to add: ' + error.message, true); return; }
+  document.getElementById('servicesList').appendChild(serviceRow(data));
+});
+
+/* ============================================================
+   REVIEWS
+   ============================================================ */
+async function loadReviews(){
+  const { data, error } = await sb.from('reviews').select('*').order('created_at', { ascending: false });
+  const pending = document.getElementById('pendingReviews');
+  const approved = document.getElementById('approvedReviews');
+  pending.innerHTML = ''; approved.innerHTML = '';
+  if (error || !data) return;
+  if (!data.filter(r=>!r.approved).length) pending.innerHTML = '<div class="small-mute">No pending reviews.</div>';
+  if (!data.filter(r=>r.approved).length) approved.innerHTML = '<div class="small-mute">No approved reviews yet.</div>';
+  data.forEach(r=>{
+    const row = document.createElement('div');
+    row.className = 'list-row';
+    row.innerHTML = `
+      <div class="row-fields">
+        <div>
+          <div style="font-weight:600;">${r.name} <span class="small-mute">— ${r.company || ''}</span></div>
+          <div class="stars-badge">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+        </div>
+        <div style="font-size:13px; color:var(--mute);">${r.message}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          ${r.approved ? '<span class="pill approved">LIVE</span>' : '<span class="pill pending">PENDING</span>'}
+          ${!r.approved ? '<button class="btn btn-solid r-approve">Approve</button>' : '<button class="btn r-unpublish">Unpublish</button>'}
+          <button class="btn btn-danger r-del">Delete</button>
+        </div>
+      </div>`;
+    row.querySelector('.r-del').addEventListener('click', async ()=>{
+      if (!confirm('Delete this review?')) return;
+      await sb.from('reviews').delete().eq('id', r.id);
+      toast('Review deleted'); loadReviews();
+    });
+    const approveBtn = row.querySelector('.r-approve');
+    if (approveBtn) approveBtn.addEventListener('click', async ()=>{
+      await sb.from('reviews').update({ approved: true }).eq('id', r.id);
+      toast('Review approved'); loadReviews();
+    });
+    const unpubBtn = row.querySelector('.r-unpublish');
+    if (unpubBtn) unpubBtn.addEventListener('click', async ()=>{
+      await sb.from('reviews').update({ approved: false }).eq('id', r.id);
+      toast('Review unpublished'); loadReviews();
+    });
+    (r.approved ? approved : pending).appendChild(row);
+  });
+}
+
+document.getElementById('addReviewBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('revName').value.trim();
+  const company = document.getElementById('revCo').value.trim();
+  const stars = parseInt(document.getElementById('revStars').value) || 5;
+  const message = document.getElementById('revMsg').value.trim();
+  if (!name || !message){ toast('Name and message are required', true); return; }
+  const { error } = await sb.from('reviews').insert({ name, company, stars, message, approved: true });
+  if (error){ toast('Failed: ' + error.message, true); return; }
+  document.getElementById('revName').value = '';
+  document.getElementById('revCo').value = '';
+  document.getElementById('revMsg').value = '';
+  toast('Review added and live');
+  loadReviews();
+});
+
+/* ============================================================
+   CONTACT / SITE TEXT
+   ============================================================ */
+document.getElementById('saveContactBtn').addEventListener('click', async ()=>{
+  const payload = {
+    whatsapp: document.getElementById('cWhatsapp').value,
+    email: document.getElementById('cEmail').value,
+    instagram_url: document.getElementById('cInstaUrl').value,
+    instagram_handle: document.getElementById('cInstaHandle').value,
+    tagline: document.getElementById('cTagline').value,
+    headline: document.getElementById('cHeadline').value,
+    subheadline: document.getElementById('cSubheadline').value,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('site_settings').update(payload).eq('id', 1);
+  toast(error ? 'Save failed: ' + error.message : 'Contact info saved', !!error);
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+let initialized = false;
+function initDashboard(){
+  if (initialized) return;
+  initialized = true;
+  loadBranding();
+  loadPortfolio();
+  loadPricing();
+  loadServices();
+  loadReviews();
+}
+</script>
+</body>
+</html>
