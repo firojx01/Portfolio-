@@ -286,6 +286,57 @@ header.scrolled{ border-color:var(--line); }
 .web-card .web-price{ font-family:var(--mono); color:var(--orange); font-size:14px; margin-top:12px; }
 .web-card p{ color:var(--mute); font-size:13px; margin-top:10px; }
 
+/* ============ PRICING v2 — categories ============ */
+.price-cat-tabs{ display:flex; gap:10px; flex-wrap:wrap; margin-top:44px; }
+.price-cat-tab{
+  font-family:var(--mono); font-size:12.5px; padding:12px 22px; border-radius:999px;
+  border:1px solid var(--line); color:var(--mute); transition:all .3s;
+}
+.price-cat-tab.active, .price-cat-tab:hover{ border-color:var(--orange); color:var(--orange); background:rgba(255,106,26,0.07); }
+.price-cat-panel{ display:none; }
+.price-cat-panel.active{ display:block; }
+.price-services-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; }
+.price-chip{ font-family:var(--mono); font-size:11px; color:var(--mute); border:1px solid var(--line); padding:6px 12px; border-radius:999px; }
+.price-group-toggle{ display:inline-flex; gap:4px; margin-top:30px; background:var(--glass); border:1px solid var(--line); border-radius:999px; padding:4px; }
+.price-group-btn{ font-family:var(--mono); font-size:12px; padding:9px 18px; border-radius:999px; color:var(--mute); transition:all .25s; }
+.price-group-btn.active{ background:var(--orange); color:var(--black); }
+.price-group-panel{ display:none; }
+.price-group-panel.active{ display:block; }
+.price-card{ display:flex; flex-direction:column; }
+.price-badges{ position:absolute; top:-13px; left:32px; right:32px; display:flex; justify-content:space-between; pointer-events:none; }
+.price-badge.best-seller{ position:static; background:var(--orange); color:var(--black); }
+.price-badge.recommended{ position:static; background:var(--cream); color:var(--black); }
+.price-old.hidden{ display:none; }
+.price-revisions{ font-family:var(--mono); font-size:11px; color:var(--mute); margin-top:6px; letter-spacing:0.05em; }
+.price-actions{ margin-top:auto; display:flex; flex-direction:column; gap:10px; padding-top:24px; }
+.price-actions .price-btn{ margin-top:0; }
+.price-btn-wa{ background:#25D366; color:#06210f; border-color:#25D366; }
+.price-btn-wa:hover{ opacity:0.9; color:#06210f; }
+.price-btn-quote{ border:1px dashed var(--line); color:var(--mute); }
+.price-btn-quote:hover{ border-color:var(--orange); color:var(--orange); }
+.price-empty{ font-family:var(--mono); font-size:12px; color:var(--mute); padding:30px 0; }
+
+/* ============ PORTFOLIO video lightbox ============ */
+.pf-item .pf-play{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:56px; height:56px; border-radius:50%; background:rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.3);
+  display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--cream); z-index:2;
+}
+.pf-item.no-media{ display:flex; align-items:center; justify-content:center; }
+.pf-item.no-media .pf-fallback{ font-family:var(--mono); font-size:11px; color:var(--mute); text-align:center; padding:16px; }
+.lightbox{
+  position:fixed; inset:0; z-index:2000; background:rgba(6,6,6,0.92); backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center; padding:40px;
+}
+.lightbox.open{ display:flex; }
+.lightbox-inner{ position:relative; width:100%; max-width:820px; }
+.lightbox-media-box{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:16px; overflow:hidden; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
+.lightbox-media-box video, .lightbox-media-box img{ width:100%; height:100%; object-fit:contain; }
+.lightbox-close{ position:absolute; top:-46px; right:0; font-family:var(--mono); font-size:13px; color:var(--mute); border:1px solid var(--line); padding:9px 16px; border-radius:999px; }
+.lightbox-close:hover{ color:var(--orange); border-color:var(--orange); }
+.lightbox-state{ font-family:var(--mono); font-size:12px; color:var(--mute); text-align:center; }
+.lightbox-caption{ margin-top:16px; font-family:var(--mono); font-size:12px; color:var(--mute); }
+
 /* ============ REVIEWS ============ */
 .reviews-track{ display:flex; gap:22px; margin-top:56px; overflow-x:auto; padding-bottom:10px; scroll-snap-type:x mandatory; }
 .reviews-track::-webkit-scrollbar{ height:4px; }
@@ -505,18 +556,11 @@ footer{ border-top:1px solid var(--line); padding:80px 0 30px; }
     <div class="wrap">
       <div class="eyebrow">Pricing</div>
       <h2 class="section-title">Simple, honest packages.</h2>
-      <div class="pricing-grid" id="pricingGrid">
-        <div class="small-mute" style="font-family:var(--mono); font-size:12px; color:var(--mute);">Loading pricing…</div>
-      </div>
+      <div class="section-sub">Pick a service, then choose one-time or monthly pricing.</div>
 
-      <div class="web-services">
-        <div class="eyebrow">Web Services</div>
-        <h3 style="font-family:var(--display); font-size:26px;">Need a website too?</h3>
-        <div class="web-grid">
-          <div class="web-card reveal"><h4>Landing Page</h4><div class="web-price">Starting ₹7,999</div><p>Single focused page built for one campaign or offer.</p></div>
-          <div class="web-card reveal"><h4>Business Website</h4><div class="web-price">Starting ₹14,999</div><p>Multi-page site covering your full business online.</p></div>
-          <div class="web-card reveal"><h4>Premium Business Website</h4><div class="web-price">Custom Pricing</div><p>Fully custom design, animation and backend, scoped to you.</p></div>
-        </div>
+      <div class="price-cat-tabs" id="priceCatTabs"></div>
+      <div id="priceCatPanels">
+        <div class="price-empty">Loading pricing…</div>
       </div>
     </div>
   </section>
@@ -616,6 +660,14 @@ footer{ border-top:1px solid var(--line); padding:80px 0 30px; }
 
 <a href="https://wa.me/919064234366" class="wa-float" id="waFloat">✆</a>
 
+<div class="lightbox" id="pfLightbox">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" id="pfLightboxClose">Close ✕</button>
+    <div class="lightbox-media-box" id="pfLightboxMedia"></div>
+    <div class="lightbox-caption" id="pfLightboxCaption"></div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    SUPABASE CONFIG + CLIENT
@@ -630,13 +682,21 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
    already resolved by the time the loader animation finishes.
    ============================================================ */
 let portfolioData = [];
+let waNumberDigits = '919064234366'; // fallback, overwritten by site_settings.whatsapp once loaded
+
+/* Minimal HTML-escaping for text pulled from Supabase before it's
+   dropped into innerHTML — admin-entered titles/features/messages
+   shouldn't be able to inject markup into the public page. */
+function esc(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 async function loadAllSiteData(){
   try{
     const [settingsRes, portfolioRes, pricingRes, servicesRes, reviewsRes] = await Promise.all([
       sb.from('site_settings').select('*').eq('id', 1).single(),
       sb.from('portfolio_items').select('*').order('created_at', { ascending: false }),
-      sb.from('pricing_plans').select('*').order('order_index'),
+      sb.from('pricing_categories').select('*, pricing_groups(*, pricing_plans(*))').eq('is_active', true).order('order_index'),
       sb.from('services').select('*').order('order_index'),
       sb.from('reviews').select('*').eq('approved', true).order('created_at', { ascending: false }),
     ]);
@@ -648,7 +708,7 @@ async function loadAllSiteData(){
     portfolioData = portfolioRes.data || [];
     renderPortfolio('all');
 
-    if (pricingRes.error) console.error('[FX Studio] pricing_plans load failed:', pricingRes.error);
+    if (pricingRes.error) console.error('[FX Studio] pricing_categories load failed:', pricingRes.error);
     renderPricing(pricingRes.data || []);
 
     if (servicesRes.error) console.error('[FX Studio] services load failed:', servicesRes.error);
@@ -708,6 +768,7 @@ function applySiteSettings(s){
 
   const waDigits = (s.whatsapp || '').replace(/[^0-9]/g, '');
   if (waDigits){
+    waNumberDigits = waDigits;
     const waUrl = `https://wa.me/${waDigits}`;
     ['channelWhatsapp', 'footerWaLink', 'waFloat'].forEach(id => {
       const el = document.getElementById(id); if (el) el.href = waUrl;
@@ -731,6 +792,19 @@ function applySiteSettings(s){
 
 /* ---------- PORTFOLIO ---------- */
 const pfGrid = document.getElementById('pfGrid');
+
+/* Guess a proper MIME type for <video type="..."> from the stored
+   mime_type column (preferred) or, failing that, the file extension —
+   this is what makes Safari/Chrome actually decode webm/mov instead
+   of showing a black frame for a mislabeled file. */
+function guessVideoMime(item){
+  if (item.mime_type) return item.mime_type;
+  const url = (item.media_url || '').toLowerCase();
+  if (url.endsWith('.webm')) return 'video/webm';
+  if (url.endsWith('.mov')) return 'video/quicktime';
+  return 'video/mp4';
+}
+
 function renderPortfolio(filter){
   pfGrid.innerHTML = '';
   const items = portfolioData.filter(i => filter === 'all' || i.category === filter);
@@ -739,16 +813,31 @@ function renderPortfolio(filter){
     return;
   }
   items.forEach(i=>{
-    const thumb = i.media_type === 'video' ? (i.thumbnail_url || '') : i.media_url;
+    const isVideo = i.media_type === 'video';
+    const thumb = isVideo ? (i.thumbnail_url || '') : i.media_url;
     const el = document.createElement('div');
-    el.className = 'pf-item reveal';
-    el.innerHTML = `
-      ${thumb ? `<img src="${thumb}" alt="${i.title}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">` : ''}
-      <div class="pf-tex"></div>
-      <div class="pf-overlay">
-        <div class="pf-cat">${i.category}${i.media_type === 'video' ? ' · Video' : ''}</div>
-        <div class="pf-title">${i.title}</div>
-      </div>`;
+    el.className = 'pf-item reveal' + (!thumb ? ' no-media' : '');
+    el.dataset.id = i.id;
+    if (thumb){
+      el.innerHTML = `
+        <img src="${thumb}" alt="${esc(i.title)}" loading="lazy" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"
+          onerror="this.style.display='none'; this.closest('.pf-item').classList.add('no-media');">
+        ${isVideo ? '<div class="pf-play">▶</div>' : ''}
+        <div class="pf-tex"></div>
+        <div class="pf-overlay">
+          <div class="pf-cat">${esc(i.category)}${isVideo ? ' · Video' : ''}</div>
+          <div class="pf-title">${esc(i.title)}</div>
+        </div>`;
+    } else {
+      el.innerHTML = `
+        <div class="pf-fallback">${isVideo ? '▶' : '🖼'}<br>${esc(i.title)}</div>
+        <div class="pf-tex"></div>
+        <div class="pf-overlay">
+          <div class="pf-cat">${esc(i.category)}${isVideo ? ' · Video' : ''}</div>
+          <div class="pf-title">${esc(i.title)}</div>
+        </div>`;
+    }
+    el.addEventListener('click', () => openLightbox(i));
     pfGrid.appendChild(el);
   });
   if (window.gsap){ gsap.fromTo('.pf-item', {opacity:0, y:24}, {opacity:1, y:0, duration:0.5, stagger:0.06}); }
@@ -760,27 +849,166 @@ document.getElementById('filterRow').addEventListener('click', e=>{
   renderPortfolio(e.target.dataset.filter);
 });
 
-/* ---------- PRICING ---------- */
-function renderPricing(plans){
-  const grid = document.getElementById('pricingGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  if (!plans.length){
-    grid.innerHTML = '<div style="font-family:var(--mono); font-size:13px; color:var(--mute);">Pricing coming soon.</div>';
+/* ---------- LIGHTBOX (plays video/shows image full-size) ---------- */
+const lightbox = document.getElementById('pfLightbox');
+const lightboxMedia = document.getElementById('pfLightboxMedia');
+const lightboxCaption = document.getElementById('pfLightboxCaption');
+
+function openLightbox(item){
+  if (!item.media_url) return;
+  lightboxCaption.textContent = `${item.title} — ${item.category}`;
+  lightboxMedia.innerHTML = '<div class="lightbox-state">Loading…</div>';
+  lightbox.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  if (item.media_type === 'video'){
+    const mime = guessVideoMime(item);
+    const video = document.createElement('video');
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    if (item.thumbnail_url) video.poster = item.thumbnail_url;
+    video.innerHTML = `<source src="${item.media_url}" type="${mime}">`;
+    video.addEventListener('canplay', () => { lightboxMedia.querySelector('.lightbox-state')?.remove(); }, { once:true });
+    video.addEventListener('error', () => {
+      lightboxMedia.innerHTML = '<div class="lightbox-state">This video couldn\'t be played in your browser. Try downloading it instead:<br><br>'
+        + `<a href="${item.media_url}" target="_blank" rel="noopener" style="color:var(--orange);">Open video file ↗</a></div>`;
+    });
+    lightboxMedia.innerHTML = '';
+    lightboxMedia.appendChild(video);
+  } else {
+    const img = new Image();
+    img.alt = item.title;
+    img.onload = () => { lightboxMedia.innerHTML = ''; lightboxMedia.appendChild(img); };
+    img.onerror = () => { lightboxMedia.innerHTML = '<div class="lightbox-state">Image failed to load.</div>'; };
+    img.src = item.media_url;
+  }
+}
+
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  document.body.style.overflow = '';
+  lightboxMedia.querySelectorAll('video').forEach(v => { v.pause(); v.src=''; });
+  lightboxMedia.innerHTML = '';
+}
+document.getElementById('pfLightboxClose').addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+/* ---------- PRICING (category -> group -> plan) ---------- */
+function money(n, currency){
+  if (n === null || n === undefined || n === '') return '';
+  const num = Number(n);
+  return isNaN(num) ? String(n) : `${currency || '₹'}${num.toLocaleString('en-IN')}`;
+}
+
+function pricingPlanCard(plan, categoryName){
+  const features = (plan.features || []).map(f => `<li>${esc(f)}</li>`).join('');
+  const showOld = plan.offer_enabled && plan.price_old;
+  const priceNew = money(plan.price_new, plan.currency) + (plan.period || '');
+  const priceOld = showOld ? money(plan.price_old, plan.currency) + (plan.period || '') : '';
+  const waMsg = encodeURIComponent(`Hi! I'm interested in the "${plan.tier}" plan under ${categoryName}. Could you share more details?`);
+  const card = document.createElement('div');
+  card.className = 'price-card reveal' + (plan.is_best_seller ? ' pop' : '');
+  card.innerHTML = `
+    <div class="price-badges">
+      ${plan.is_best_seller ? `<span class="price-badge best-seller">Best Seller</span>` : '<span></span>'}
+      ${plan.is_recommended ? `<span class="price-badge recommended">Recommended</span>` : '<span></span>'}
+    </div>
+    <div class="price-tier">${esc(plan.tier)}</div>
+    <div class="price-row"><span class="price-old${showOld ? '' : ' hidden'}">${priceOld}</span><span class="price-new">${priceNew}</span></div>
+    <ul class="price-list">${features}</ul>
+    <div class="price-delivery">DELIVERY · ${(plan.delivery || 'On request').toUpperCase()}</div>
+    ${plan.revisions ? `<div class="price-revisions">REVISIONS · ${plan.revisions.toUpperCase()}</div>` : ''}
+    <div class="price-actions">
+      <a href="https://wa.me/${waNumberDigits}?text=${waMsg}" target="_blank" rel="noopener" class="price-btn price-btn-wa">WhatsApp Us</a>
+      <a href="#contact" class="price-btn">Order Now</a>
+      ${plan.show_custom_quote ? `<a href="#contact" class="price-btn price-btn-quote">Get Custom Quote</a>` : ''}
+    </div>`;
+  return card;
+}
+
+function renderPricing(categories){
+  const tabs = document.getElementById('priceCatTabs');
+  const panelsWrap = document.getElementById('priceCatPanels');
+  if (!tabs || !panelsWrap) return;
+  tabs.innerHTML = ''; panelsWrap.innerHTML = '';
+  if (!categories.length){
+    panelsWrap.innerHTML = '<div class="price-empty">Pricing coming soon.</div>';
     return;
   }
-  plans.forEach(p=>{
-    const features = (p.features || []).map(f => `<li>${f}</li>`).join('');
-    const card = document.createElement('div');
-    card.className = 'price-card reveal' + (p.is_popular ? ' pop' : '');
-    card.innerHTML = `
-      ${p.badge ? `<div class="price-badge">${p.badge}</div>` : ''}
-      <div class="price-tier">${p.tier}</div>
-      <div class="price-row"><span class="price-old">${p.price_old || ''}</span><span class="price-new">${p.price_new || ''}</span></div>
-      <ul class="price-list">${features}</ul>
-      <div class="price-delivery">DELIVERY · ${(p.delivery || '').toUpperCase()}</div>
-      <a href="#contact" class="price-btn">Choose ${p.tier}</a>`;
-    grid.appendChild(card);
+  const sortedCats = [...categories].sort((a,b) => (a.order_index||0) - (b.order_index||0));
+
+  sortedCats.forEach((cat, ci) => {
+    const tab = document.createElement('button');
+    tab.className = 'price-cat-tab' + (ci === 0 ? ' active' : '');
+    tab.textContent = cat.name;
+    tab.dataset.cat = cat.id;
+    tabs.appendChild(tab);
+
+    const panel = document.createElement('div');
+    panel.className = 'price-cat-panel' + (ci === 0 ? ' active' : '');
+    panel.id = 'cat-panel-' + cat.id;
+
+    const chips = (cat.services || []).map(s => `<span class="price-chip">${esc(s)}</span>`).join('');
+    panel.innerHTML = `<div class="price-services-row">${chips}</div>`;
+
+    const groups = [...(cat.pricing_groups || [])]
+      .filter(g => g.is_enabled !== false)
+      .sort((a,b) => (a.order_index||0) - (b.order_index||0));
+
+    if (!groups.length){
+      panel.innerHTML += '<div class="price-empty">Pricing coming soon for this service.</div>';
+    } else if (groups.length === 1){
+      const grid = document.createElement('div');
+      grid.className = 'pricing-grid';
+      const plans = [...(groups[0].pricing_plans || [])].sort((a,b) => (a.order_index||0) - (b.order_index||0));
+      plans.forEach(p => grid.appendChild(pricingPlanCard(p, cat.name)));
+      panel.appendChild(grid);
+    } else {
+      const toggle = document.createElement('div');
+      toggle.className = 'price-group-toggle';
+      groups.forEach((g, gi) => {
+        const btn = document.createElement('button');
+        btn.className = 'price-group-btn' + (gi === 0 ? ' active' : '');
+        btn.textContent = g.name;
+        btn.dataset.group = g.id;
+        toggle.appendChild(btn);
+      });
+      panel.appendChild(toggle);
+
+      groups.forEach((g, gi) => {
+        const gPanel = document.createElement('div');
+        gPanel.className = 'price-group-panel' + (gi === 0 ? ' active' : '');
+        gPanel.id = 'group-panel-' + g.id;
+        const grid = document.createElement('div');
+        grid.className = 'pricing-grid';
+        const plans = [...(g.pricing_plans || [])].sort((a,b) => (a.order_index||0) - (b.order_index||0));
+        plans.forEach(p => grid.appendChild(pricingPlanCard(p, cat.name + ' · ' + g.name)));
+        gPanel.appendChild(grid);
+        panel.appendChild(gPanel);
+      });
+
+      toggle.addEventListener('click', e => {
+        const btn = e.target.closest('.price-group-btn');
+        if (!btn) return;
+        toggle.querySelectorAll('.price-group-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        panel.querySelectorAll('.price-group-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('group-panel-' + btn.dataset.group).classList.add('active');
+      });
+    }
+
+    panelsWrap.appendChild(panel);
+  });
+
+  tabs.addEventListener('click', e => {
+    const btn = e.target.closest('.price-cat-tab');
+    if (!btn) return;
+    tabs.querySelectorAll('.price-cat-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    panelsWrap.querySelectorAll('.price-cat-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('cat-panel-' + btn.dataset.cat).classList.add('active');
   });
 }
 
